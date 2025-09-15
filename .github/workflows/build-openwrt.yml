@@ -167,7 +167,40 @@ jobs:
         grep -q '^CONFIG_PACKAGE_kmod-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_kmod-batman-adv=y' >> .config
         grep -q '^CONFIG_PACKAGE_batctl=y$' .config || echo 'CONFIG_PACKAGE_batctl=y' >> .config
         grep -q '^CONFIG_PACKAGE_luci-proto-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_luci-proto-batman-adv=y' >> .config
-       
+
+    - name: Inject default wireless config (custom SSIDs & radio1 params)   
+      run: |
+        mkdir -p openwrt/files/etc/config
+        cat > openwrt/files/etc/config/wireless <<'EOF'
+        config wifi-device 'radio0'
+             option type 'mac80211'
+             option band '2g'
+             option country 'CN'
+             option htmode 'HE40'
+             option channel '1'
+
+        config wifi-iface 'default_radio0'
+             option device 'radio0'
+             option mode 'ap'
+             option ssid 'Openwrt-2.4GHZ'
+             option encryption 'psk2'
+             option key '123456789'
+
+        config wifi-device 'radio1'
+             option type 'mac80211'
+             option band '5g'
+             option country 'CN'
+             option htmode 'HE160'
+             option channel '64'
+
+        config wifi-iface 'default_radio1'
+             option device 'radio1'
+             option mode 'ap'
+             option ssid 'Openwrt-5GHZ'
+             option encryption 'psk2'
+             option key '123456789'
+        EOF
+        
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
