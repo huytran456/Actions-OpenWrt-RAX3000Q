@@ -201,6 +201,20 @@ jobs:
              option key '123456789'
         EOF
         
+    - name: Force sysupgrade build in config
+      run: |
+        cd openwrt
+        # Ensure rootfs formats/images so *-sysupgrade.bin is produced per target
+        grep -q '^CONFIG_TARGET_IMAGES=y$' .config || echo 'CONFIG_TARGET_IMAGES=y' >> .config
+        grep -q '^CONFIG_TARGET_ROOTFS_SQUASHFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_SQUASHFS=y' >> .config
+        # Optional: include initramfs images if you need them
+        grep -q '^CONFIG_TARGET_ROOTFS_INITRAMFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' >> .config
+        # If your tree supports per-device rootfs toggles, keep them on
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' >> .config
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS_SQUASHFS=y' >> .config
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS_INITRAMFS=y' >> .config
+        make defconfig
+
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
