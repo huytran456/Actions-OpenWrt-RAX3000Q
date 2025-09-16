@@ -173,7 +173,8 @@ jobs:
         cd openwrt
         grep -q '^CONFIG_TARGET_IMAGES=y$' .config || echo 'CONFIG_TARGET_IMAGES=y' >> .config
         grep -q '^CONFIG_TARGET_ROOTFS_SQUASHFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_SQUASHFS=y' >> .config
-        grep -q '^CONFIG_TARGET_ROOTFS_INITRAMFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' >> .config     
+        grep -q '^CONFIG_TARGET_IMAGES_GZIP=y$' .config || echo 'CONFIG_TARGET_IMAGES_GZIP=y' >> .config
+        grep -q '^CONFIG_IMAGEOPT=y$' .config || echo 'CONFIG_IMAGEOPT=y' >> .config
 
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
