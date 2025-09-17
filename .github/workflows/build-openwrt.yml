@@ -156,26 +156,6 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
-    - name: Enable batman-adv (kmod + batctl [+ optional LuCI])
-      run: |
-        cd openwrt
-        ./scripts/feeds update -a
-        ./scripts/feeds install kmod-batman-adv || true
-        ./scripts/feeds install batctl || true
-        ./scripts/feeds install luci-proto-batman-adv || true
-        
-        grep -q '^CONFIG_PACKAGE_kmod-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_kmod-batman-adv=y' >> .config
-        grep -q '^CONFIG_PACKAGE_batctl=y$' .config || echo 'CONFIG_PACKAGE_batctl=y' >> .config
-        grep -q '^CONFIG_PACKAGE_luci-proto-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_luci-proto-batman-adv=y' >> .config
-
-    - name: Force sysupgrade build in config
-      run: |
-        cd openwrt
-        grep -q '^CONFIG_TARGET_IMAGES=y$' .config || echo 'CONFIG_TARGET_IMAGES=y' >> .config
-        grep -q '^CONFIG_TARGET_ROOTFS_SQUASHFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_SQUASHFS=y' >> .config
-        grep -q '^CONFIG_IMAGEOPT=y$' .config || echo 'CONFIG_IMAGEOPT=y' >> .config
-        grep -q '^CONFIG_TARGET_IMAGES_GZIP=y$' .config || echo 'CONFIG_TARGET_IMAGES_GZIP=y' >> .config
-
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -205,15 +185,6 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
-        echo '--- Built images:'
-        find bin/targets -maxdepth 3 -type f \( -name '*sysupgrade*.itb' -o -name '*.itb' -o -name '*sysupgrade*' -o -name '*factory*' \) -printf '%P\n' || true
-        # Prefer FIT sysupgrade.itb; copy the newest one to a friendly name for uploads
-        FIT_ITB=$(find bin/targets -type f -name '*sysupgrade*.itb' -print0 2>/dev/null | xargs -0 ls -1t 2>/dev/null | head -n1)
-        if [ -n "$FIT_ITB" ]; then
-          mkdir -p "$GITHUB_WORKSPACE/_staged"
-          cp "$FIT_ITB" "$GITHUB_WORKSPACE/_staged/latest-sysupgrade.itb"
-          echo "Staged: $GITHUB_WORKSPACE/_staged/latest-sysupgrade.itb"
-        fi
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
@@ -237,7 +208,6 @@ jobs:
         cd openwrt/bin/targets/*/*
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        [ -d "$GITHUB_WORKSPACE/_staged" ] && cp -f "$GITHUB_WORKSPACE/_staged/latest-sysupgrade.itb" . 2>/dev/null || true
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware directory
