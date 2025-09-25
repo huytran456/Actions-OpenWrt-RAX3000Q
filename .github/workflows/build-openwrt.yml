@@ -155,6 +155,8 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+        sed -i '/CONFIG_PACKAGE_wpad-basic/d' .config
+        echo 'CONFIG_PACKAGE_wpad-openssl=y' >> .config
     - name: Enable batman-adv (kmod + batctl [+ optional LuCI])
       run: |
         cd openwrt
