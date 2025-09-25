@@ -155,8 +155,20 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        sed -i '/CONFIG_PACKAGE_wpad-basic/d' .config
-        echo 'CONFIG_PACKAGE_wpad-openssl=y' >> .config
+        
+    - name: Force sysupgrade build in config
+      run: |
+        cd openwrt
+        # Ensure rootfs formats/images so *-sysupgrade.bin is produced per target
+        grep -q '^CONFIG_TARGET_IMAGES=y$' .config || echo 'CONFIG_TARGET_IMAGES=y' >> .config
+        grep -q '^CONFIG_TARGET_ROOTFS_SQUASHFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_SQUASHFS=y' >> .config
+        # Optional: include initramfs images if you need them
+        grep -q '^CONFIG_TARGET_ROOTFS_INITRAMFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' >> .config
+        # If your tree supports per-device rootfs toggles, keep them on
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' >> .config
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS_SQUASHFS=y' >> .config
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS_INITRAMFS=y' >> .config
+        
     - name: Enable batman-adv (kmod + batctl [+ optional LuCI])
       run: |
         cd openwrt
@@ -168,6 +180,37 @@ jobs:
         grep -q '^CONFIG_PACKAGE_kmod-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_kmod-batman-adv=y' >> .config
         grep -q '^CONFIG_PACKAGE_batctl=y$' .config || echo 'CONFIG_PACKAGE_batctl=y' >> .config
         grep -q '^CONFIG_PACKAGE_luci-proto-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_luci-proto-batman-adv=y' >> .config
+
+    - name: Enable full openssl
+      run: |
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install wpad-openssl libustream-openssl || true
+
+        # Helpers
+        ensure_set()   { grep -q "^$1=y$" .config || echo "$1=y" >> .config; }
+        ensure_unset() { sed -i "/^$1=/d" .config; grep -q "^# $1 is not set$" .config || echo "# $1 is not set" >> .config; }
+
+        # Use OpenSSL variant
+        ensure_set   CONFIG_PACKAGE_wpad-openssl
+        ensure_unset CONFIG_PACKAGE_wpad
+        ensure_unset CONFIG_PACKAGE_wpad-basic
+        ensure_unset CONFIG_PACKAGE_wpad-mini
+        ensure_unset CONFIG_PACKAGE_wpad-mbedtls
+        ensure_unset CONFIG_PACKAGE_wpad-wolfssl
+        ensure_unset CONFIG_PACKAGE_wpad-basic-mbedtls
+        ensure_unset CONFIG_PACKAGE_wpad-basic-wolfssl
+
+        # libustream with OpenSSL
+        ensure_set   CONFIG_PACKAGE_libustream-openssl
+        ensure_unset CONFIG_PACKAGE_libustream-mbedtls
+        ensure_unset CONFIG_PACKAGE_libustream-wolfssl
+
+        # Prefer full OpenSSL (optional but recommended)
+        ensure_set   CONFIG_PACKAGE_libopenssl || true
+        ensure_unset CONFIG_PACKAGE_libopenssl-minimal || true
+        ensure_unset CONFIG_PACKAGE_libmbedtls || true
+        ensure_unset CONFIG_PACKAGE_libwolfssl || true
 
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
