@@ -23,7 +23,7 @@ on:
     - cron: 0 8 * * 2
 
 env:
-  REPO_URL: https://github.com/huytran456/immortalwrt-ipq50xx
+  REPO_URL: https://github.com/huytran456/immortalwrt-ipq50xx_huytran.git
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
@@ -90,7 +90,7 @@ jobs:
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: Enable build ccache
-      uses: huytran456/cachewrtbuild@main
+      uses: klever1988/cachewrtbuild@main
       with:
         ccache: 'true'
         mixkey: 'immortalwrt21-cortexa7-vfpv4'
@@ -170,7 +170,7 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds uninstall wpad-basic-wolfssl wpad-mini
-        ./scripts/feeds install wpad-openssl libustream-openssl kmod-crypto-kpp kmod-crypto-ecdh kmod-crypto-ccm || true
+        ./scripts/feeds install wpad-openssl libustream-openssl iw-full || true
 
         # Helpers
         ensure_set()   { grep -q "^$1=y$" .config || echo "$1=y" >> .config; }
@@ -204,12 +204,12 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         
-    # - name: Fix some download failed first
-    #   run: |
-    #     cd openwrt
-    #     mkdir dl
-    #     wget "https://www.dropbox.com/scl/fi/9ts30p2csnlb9imaf8k68/backports-20210222-5.4-qsdk-11.5.0.5.tar.xz?rlkey=sntbyfjgg86gu2uoocgb9ggp1&st=7w81hl56&dl=1" -O dl/backports-20210222-5.4-qsdk-11.5.0.5.tar.xz
-    #     wget "https://www.dropbox.com/scl/fi/gu7ge6jmefn72ttuop1zs/linux-5.4-qsdk-11.5.0.5.tar.xz?rlkey=tdpq0ye35x290frbh7i8uqrm8&st=jjvegqrr&dl=1" -O dl/linux-5.4-qsdk-11.5.0.5.tar.xz
+    - name: Fix some download failed first
+      run: |
+        cd openwrt
+        mkdir dl
+        wget "https://www.dropbox.com/scl/fi/9ts30p2csnlb9imaf8k68/backports-20210222-5.4-qsdk-11.5.0.5.tar.xz?rlkey=sntbyfjgg86gu2uoocgb9ggp1&st=7w81hl56&dl=1" -O dl/backports-20210222-5.4-qsdk-11.5.0.5.tar.xz
+        wget "https://www.dropbox.com/scl/fi/gu7ge6jmefn72ttuop1zs/linux-5.4-qsdk-11.5.0.5.tar.xz?rlkey=tdpq0ye35x290frbh7i8uqrm8&st=jjvegqrr&dl=1" -O dl/linux-5.4-qsdk-11.5.0.5.tar.xz
 
     - name: Download package
       id: package
