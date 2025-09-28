@@ -23,7 +23,7 @@ on:
     - cron: 0 8 * * 2
 
 env:
-  REPO_URL: https://github.com/huytran456/immortalwrt-ipq50xx_huytran.git
+  REPO_URL: https://github.com/huytran456/immortalwrt-ipq50xx
   REPO_BRANCH: openwrt-21.02
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
@@ -142,7 +142,8 @@ jobs:
         cp -rf cdn.jsdelivr.net/gh/immortalwrt/packages@master/net/frp feeds/packages/net/frp/
         rm -rf cdn.jsdelivr.net
         find feeds/packages/net/frp -name index.html -exec rm {} \; 
-        
+
+        wget "https://www.dropbox.com/scl/fi/uccikbibj772c4sekzbk7/luci-app-turboacc.zip?rlkey=yzhkk0lfzhrthn8hbl1qt8k5j&st=31820445&dl=1" -O luci-app-turboacc.zip
         rm -rf feeds/luci/applications/luci-app-turboacc
         unzip luci-app-turboacc.zip -d feeds/luci/applications/
         rm -rf luci-app-turboacc.zip
@@ -155,12 +156,27 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
-    - name: Enable batman-adv (kmod + batctl)
+    - name: Force sysupgrade build in config
+      run: |
+        cd openwrt
+        # Ensure rootfs formats/images so *-sysupgrade.bin is produced per target
+        grep -q '^CONFIG_TARGET_IMAGES=y$' .config || echo 'CONFIG_TARGET_IMAGES=y' >> .config
+        grep -q '^CONFIG_TARGET_ROOTFS_SQUASHFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_SQUASHFS=y' >> .config
+        # Optional: include initramfs images if you need them
+        grep -q '^CONFIG_TARGET_ROOTFS_INITRAMFS=y$' .config || echo 'CONFIG_TARGET_ROOTFS_INITRAMFS=y' >> .config
+        # If your tree supports per-device rootfs toggles, keep them on
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' >> .config
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS_SQUASHFS=y' >> .config
+        echo 'CONFIG_TARGET_PER_DEVICE_ROOTFS_INITRAMFS=y' >> .config
+        
+    - name: Enable batman-adv (kmod + batctl [+ optional LuCI])
       run: |
         cd openwrt
         ./scripts/feeds update -a
-        ./scripts/feeds install kmod-batman-adv batctl luci-proto-batman-adv || true
-                
+        ./scripts/feeds install kmod-batman-adv || true
+        ./scripts/feeds install batctl || true
+        ./scripts/feeds install luci-proto-batman-adv || true
+        
         grep -q '^CONFIG_PACKAGE_kmod-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_kmod-batman-adv=y' >> .config
         grep -q '^CONFIG_PACKAGE_batctl=y$' .config || echo 'CONFIG_PACKAGE_batctl=y' >> .config
         grep -q '^CONFIG_PACKAGE_luci-proto-batman-adv=y$' .config || echo 'CONFIG_PACKAGE_luci-proto-batman-adv=y' >> .config
@@ -169,8 +185,7 @@ jobs:
       run: |
         cd openwrt
         ./scripts/feeds update -a
-        ./scripts/feeds uninstall wpad-basic-wolfssl wpad-mini
-        ./scripts/feeds install wpad-openssl libustream-openssl iw-full || true
+        ./scripts/feeds install wpad-openssl libustream-openssl || true
 
         # Helpers
         ensure_set()   { grep -q "^$1=y$" .config || echo "$1=y" >> .config; }
@@ -203,7 +218,7 @@ jobs:
       env:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        
+
     - name: Fix some download failed first
       run: |
         cd openwrt
