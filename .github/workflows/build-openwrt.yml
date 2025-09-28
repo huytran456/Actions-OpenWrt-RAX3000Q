@@ -90,7 +90,7 @@ jobs:
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: Enable build ccache
-      uses: klever1988/cachewrtbuild@main
+      uses: huytran456/cachewrtbuild@main
       with:
         ccache: 'true'
         mixkey: 'immortalwrt21-cortexa7-vfpv4'
